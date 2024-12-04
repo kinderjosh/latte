@@ -1,0 +1,6 @@
+x: Int = 12;
+y: Float = 2.2;
+c: Char = 292;
+c = x;
+y = c;
+x = y;

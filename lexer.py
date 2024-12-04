@@ -10,6 +10,8 @@ TOK_LBRACE = 7
 TOK_RBRACE = 8
 TOK_COLON = 9
 TOK_COMMA = 10
+TOK_EQUAL = 11
+TOK_SEMI = 12
 
 def tok_type_to_str(type: int) -> str:
     if type == TOK_EOF:
@@ -32,6 +34,10 @@ def tok_type_to_str(type: int) -> str:
         return "Colon"
     elif type == TOK_COMMA:
         return "Comma"
+    elif type == TOK_EQUAL:
+        return "Equal"
+    elif type == TOK_SEMI:
+        return "Semicolon"
     else:
         return "<Undefined>"
 
@@ -125,6 +131,10 @@ class Lex:
             return self.step_with(TOK_COLON, ":")
         elif self.ch == ',':
             return self.step_with(TOK_COMMA, ",")
+        elif self.ch == "=":
+            return self.step_with(TOK_EQUAL, "=")
+        elif self.ch == ";":
+            return self.step_with(TOK_SEMI, ";")
         else:
             print(f"{self.file}:{self.ln}:{self.col}: Error: Unknown character '{self.ch}'.")
             exit()
