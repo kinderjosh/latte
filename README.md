@@ -45,4 +45,4 @@ Which generates ```output.c``` and ```output.exe```.
 
 ## License
 
-[DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE](./LICENSE)
+[MIT](./LICENSE)
