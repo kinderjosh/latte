@@ -271,6 +271,11 @@ class Prs:
 
             nodes.append(node)
 
+        for sym in sym_tab:
+            if sym.type == NOD_FUNC and sym.func_body is None:
+                print(f"{self.file}:{sym.ln}:{sym.col}: Error: Function '{sym.func_name}' was predefined but the body was never declared.")
+                exit()
+
         root = Node(NOD_ROOT, "<internal>", "<internal>", 0, 0)
         root.root_nodes = nodes
         return root

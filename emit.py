@@ -15,7 +15,9 @@ def node_to_value(node: Node) -> str:
     elif node.type == NOD_VAR:
         return node.var_name
     elif node.type == NOD_CALL:
-        return gen_call(node)
+        code = gen_call(node)
+        code[-2:-1] = "" # Remove ';\n'
+        return code
     else:
         assert(False)
 
@@ -31,7 +33,7 @@ def gen_func(node: Node) -> str:
     code += ") {\n"
 
     for stmt in node.func_body:
-        code += "    " + gen_node(stmt)
+        code += gen_node(stmt)
 
     return code + "}\n"
 
@@ -44,7 +46,7 @@ def gen_call(node: Node) -> str:
         if i != len(node.call_args) - 1:
             code += ", "
 
-    return code + ")"
+    return code + ");\n"
 
 def gen_assign(node: Node) -> str:
     code = ""
@@ -75,11 +77,11 @@ def gen_root(root: Node) -> str:
         stmt = gen_node(node)
 
         if node.type != NOD_FUNC:
-            main += "    " + stmt
+            main += stmt
         else:
             other += stmt
 
-    return other + main + "    return 0;\n}"
+    return other + main + "return 0;\n}"
 
 def gen_node(node: Node) -> str:
     if node.type == NOD_ROOT:

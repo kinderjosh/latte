@@ -17,4 +17,4 @@ if __name__ == "__main__":
     with open("output.c", "w") as f:
         f.write(code)
 
-    os.system("gcc -o output.exe output.c")
+    os.system("gcc -D_GNU_SOURCE -o output.exe output.c")
