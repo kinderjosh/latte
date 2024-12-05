@@ -31,7 +31,7 @@ def node_to_value(node: Node) -> str:
     elif node.type == NOD_FLOAT:
         return str(float(node.data_digit))
     elif node.type == NOD_STR:
-        return f"_newstr(\"{node.data_str}\")"
+        return f"newstr(\"{node.data_str}\")"
     elif node.type == NOD_VAR:
         return node.var_name + "_"
     elif node.type == NOD_CALL:
@@ -135,7 +135,7 @@ def gen_ret(node: Node) -> str:
 def gen_root(root: Node) -> str:
     global double_lists_to_free
     main = "\nint main(int argc, char** argv) {\ngc_init();\n"
-    other = "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <stdint.h>\n\nvoid** gc;\nsize_t gc_cnt = 0, gc_size = 0;\n\nvoid gc_init() {\ngc = malloc(1);\n}\n\nvoid gc_add(void* ptr, size_t size) {\ngc_size += size;\ngc = realloc(gc, gc_size);\ngc[gc_cnt++] = ptr;\n}\n\nvoid gc_free() {\nfor (size_t i = 0; i < gc_cnt; i++)\nfree(gc[i]);\nfree(gc);\n}\n\nchar* _newstr(char *str) {\nchar *new = calloc(strlen(str) + 1, sizeof(char));\nstrcpy(new, str);\nreturn new;\n}\n\n"
+    other = "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <stdint.h>\n\nvoid** gc;\nsize_t gc_cnt = 0, gc_size = 0;\n\nvoid gc_init() {\ngc = malloc(1);\n}\n\nvoid gc_add(void* ptr, size_t size) {\ngc_size += size;\ngc = realloc(gc, gc_size);\ngc[gc_cnt++] = ptr;\n}\n\nvoid gc_free() {\nfor (size_t i = 0; i < gc_cnt; i++)\nfree(gc[i]);\nfree(gc);\n}\n\nchar* newstr(char *str) {\nchar *new = calloc(strlen(str) + 1, sizeof(char));\nstrcpy(new, str);\nreturn new;\n}\n\n"
 
     for node in root.root_nodes:
         stmt = gen_node(node)
