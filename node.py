@@ -6,6 +6,7 @@ NOD_FUNC = 4
 NOD_CALL = 5
 NOD_ASSIGN = 6
 NOD_RET = 7
+NOD_NOP = 8
 
 def node_type_to_str(type: int) -> str:
     if type == NOD_ROOT:
@@ -24,6 +25,8 @@ def node_type_to_str(type: int) -> str:
         return "Assignment"
     elif type == NOD_RET:
         return "Return"
+    elif type == NOD_NOP:
+        return "<Nop>"
     else:
         return "<Undefined>"
 
