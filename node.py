@@ -1,3 +1,5 @@
+sym_tab = []
+
 NOD_ROOT = 0
 NOD_INT = 1
 NOD_FLOAT = 2
@@ -37,3 +39,4 @@ class Node:
         self.func_def = func_def
         self.ln = ln
         self.col = col
+        self.index = len(sym_tab) - 1

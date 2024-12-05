@@ -1,4 +1,9 @@
+Int Get();
+
+// ...
+
 Int Get() {
-    Float b = 2.2;
-    return b;
+    return 32;
 }
+
+Float a = Get();

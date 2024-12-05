@@ -94,6 +94,13 @@ class Lex:
         while self.ch == ' ' or self.ch == '\t' or self.ch == '\n':
             self.step()
 
+        if self.ch == '/' and self.peek(1) == '/':
+            while self.ch != '\n' and self.ch != '\0':
+                self.step()
+
+            self.step()
+            return self.next()
+
         if self.ch.isalpha() or self.ch == '_':
             value = ""
 

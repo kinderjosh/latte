@@ -3,7 +3,6 @@ from node import *
 
 cur_scope = "<global>"
 cur_func = "<global>"
-sym_tab = []
 
 def sym_find(type: int, scope: str, name: str) -> Node:
     for sym in sym_tab:
@@ -130,15 +129,20 @@ class Prs:
                     params.append(param)
 
                 self.eat(TOK_RPAREN)
-                node.func_params = params
 
                 sym = sym_find(NOD_FUNC, "<global>", name)
                 if sym is None:
+                    node.func_params = params
                     sym_tab.append(node)
+                elif len(params) != len(sym.func_params):
+                    print(f"{self.file}:{ln}:{col}: Error: Function '{name}' was originally defined with {len(sym.func_params)} parameters at {sym.ln}:{sym.col}, but found {len(params)}.")
+                    exit()
 
                 if self.tok.type == TOK_SEMI:
+                    node.func_params = params
                     return Node(NOD_NOP, "<None", "<None", 0, 0)
 
+                node.func_params = params
                 node.func_body = self.prs_body()
                 ret = None
 
@@ -149,6 +153,7 @@ class Prs:
                     print(f"{self.file}:{ln}:{col}: Error: Missing return statement in function '{name}' of type '{node.func_type}'.")
                     exit()
 
+                sym_tab[node.index] = node
                 cur_scope = "<global>"
                 cur_func = "<global>"
                 return node
@@ -198,6 +203,35 @@ class Prs:
             self.eat(TOK_EQUAL)
             node.assign_value = self.prs_value(sym.assign_type)
             return node
+        elif self.tok.type == TOK_LPAREN:
+            sym = sym_find(NOD_FUNC, "<global>", id)
+            if sym is None:
+                print(f"{self.file}:{ln}:{col}: Error: Undefined function '{id}'.")
+                exit()
+
+            args = []
+            self.eat(TOK_LPAREN)
+
+            while self.tok.type != TOK_RPAREN and self.tok.type != TOK_EOF:
+                if len(args) >= len(sym.func_params):
+                    print(f"{self.file}:{ln}:{col}: Error: Excessive argument in call to function '{id}'; expected {len(sym.func_params)} but found {len(args)}.")
+                    exit()
+                elif len(args) > 0:
+                    self.eat(TOK_COMMA)
+
+                args.append(self.prs_value(sym.func_params[len(args)].assign_type))
+
+            if len(args) < len(sym.func_params):
+                print(f"{self.file}:{ln}:{col}: Error: Missing argument in call to function '{id}'; expected {len(sym.func_params)} but found {len(args)}.")
+                exit()
+
+            self.eat(TOK_RPAREN)
+
+            node = Node(NOD_CALL, cur_scope, cur_func, ln, col)
+            node.call_name = id
+            node.call_args = args
+            return node
+
         elif sym_find(NOD_ASSIGN, cur_scope, id) is not None:
             node = Node(NOD_VAR, cur_scope, cur_func, ln, col)
             node.var_name = id
