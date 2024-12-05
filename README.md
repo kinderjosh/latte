@@ -32,13 +32,13 @@ sudo apt install build-essential
 Until the language is rewritten in itself, use the bootstrap compiler written in python:
 
 ```bash
-python3 latte.py <input file>
+python3 latte.py
 ```
 
 In some cases on Windows:
 
 ```bash
-py latte.py <input file>
+py latte.py
 ```
 
 Which generates ```output.c``` and ```output.exe```.
