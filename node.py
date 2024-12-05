@@ -9,6 +9,10 @@ NOD_CALL = 5
 NOD_ASSIGN = 6
 NOD_RET = 7
 NOD_NOP = 8
+NOD_STR = 9
+NOD_C = 10
+NOD_LIST = 11
+NOD_SUBSCR = 12
 
 def node_type_to_str(type: int) -> str:
     if type == NOD_ROOT:
@@ -29,6 +33,14 @@ def node_type_to_str(type: int) -> str:
         return "Return"
     elif type == NOD_NOP:
         return "<Nop>"
+    elif type == NOD_STR:
+        return "String"
+    elif type == NOD_C:
+        return "<C code>"
+    elif type == NOD_LIST:
+        return "List"
+    elif type == NOD_SUBSCR:
+        return "Array subscript"
     else:
         return "<Undefined>"
 
@@ -39,4 +51,4 @@ class Node:
         self.func_def = func_def
         self.ln = ln
         self.col = col
-        self.index = len(sym_tab) - 1
+        self.index = 0 if len(sym_tab) < 1 else len(sym_tab) - 1 # Just for re-updating functions

@@ -13,7 +13,7 @@ def sym_find(type: int, scope: str, name: str) -> Node:
     return None
 
 def is_type(id: str) -> bool:
-    return True if id in ["Void", "Char", "Int", "Float"] else False
+    return True if id in ["Void", "Char", "Int", "Float", "String"] else False
 
 class Prs:
     def __init__(self, file: str) -> None:
@@ -35,6 +35,12 @@ class Prs:
         if is_type(self.tok.value):
             id = self.tok.value
             self.eat(self.tok.type)
+
+            if self.tok.type == TOK_LSQUARE:
+                self.eat(TOK_LSQUARE)
+                self.eat(TOK_RSQUARE)
+                id += "[]"
+
             return id
         
         print(f"{self.file}:{self.tok.ln}:{self.tok.col}: Error: Invalid datatype '{self.tok.value}'.")
@@ -50,7 +56,7 @@ class Prs:
                 value.data_digit = 0
             elif (type == "Int" or type == "Float") and (value.data_digit > (2**32) - 1 or value.data_digit < -(2**32)):
                 value.data_digit = 0
-        elif value.type == NOD_VAR:
+        elif value.type == NOD_VAR or value.type == NOD_STR or value.type == NOD_LIST or value.type == NOD_SUBSCR:
             pass
         elif value.type == NOD_CALL:
             sym = sym_find(NOD_FUNC, "<global>", value.call_name)
@@ -69,7 +75,7 @@ class Prs:
 
         while self.tok.type != TOK_RBRACE and self.tok.type != TOK_EOF:
             stmt = self.prs_stmt()
-            if stmt.type not in [NOD_CALL, NOD_ASSIGN, NOD_RET, NOD_NOP]:
+            if stmt.type not in [NOD_CALL, NOD_ASSIGN, NOD_RET, NOD_NOP, NOD_C, NOD_SUBSCR]:
                 print(f"{self.file}:{stmt.ln}:{stmt.col}: Error: Invalid statement '{node_type_to_str(stmt.type)}' in function '{cur_func}'.")
                 exit()
 
@@ -88,6 +94,11 @@ class Prs:
         self.eat(TOK_ID)
 
         if is_type(id):
+            if self.tok.type == TOK_LSQUARE:
+                self.eat(TOK_LSQUARE)
+                self.eat(TOK_RSQUARE)
+                id += "[]"
+
             type = id
             name = self.tok.value
             self.eat(TOK_ID)
@@ -191,6 +202,36 @@ class Prs:
                 node.ret_value = self.prs_value(sym.func_type)
 
             return node
+        elif id == "__C__":
+            self.eat(TOK_LPAREN)
+            code = self.tok.value
+            self.eat(TOK_STR)
+            self.eat(TOK_RPAREN)
+
+            node = Node(NOD_C, cur_scope, cur_func, ln, col)
+            node.c_code = code
+            return node
+        elif self.tok.type == TOK_LSQUARE:
+            sym = sym_find(NOD_ASSIGN, cur_scope, id)
+            if sym is None:
+                print(f"{self.file}:{ln}:{col}: Error: Undefined variable '{id}'.")
+                exit()
+
+            self.eat(TOK_LSQUARE)
+            index = self.prs_value("<None>")
+            self.eat(TOK_RSQUARE)
+
+            node = Node(NOD_SUBSCR, cur_scope, cur_func, ln, col)
+            node.subscr_name = id
+            node.subscr_index = index
+
+            if self.tok.type == TOK_EQUAL:
+                self.eat(TOK_EQUAL)
+                node.subscr_assign = self.prs_value(sym.assign_type)
+            else:
+                node.subscr_assign = None
+
+            return node
         elif self.tok.type == TOK_EQUAL:
             sym = sym_find(NOD_ASSIGN, cur_scope, id)
             if sym is None:
@@ -243,16 +284,43 @@ class Prs:
     def prs_data(self) -> Node:
         global cur_scope
         global cur_func
-        node = Node(NOD_INT if self.tok.type == TOK_INT else NOD_FLOAT, cur_scope, cur_func, self.tok.ln, self.tok.col)
-        node.data_digit = float(self.tok.value)
+        node = None
+
+        if self.tok.type == TOK_STR:
+            node = Node(NOD_STR, cur_scope, cur_func, self.tok.ln, self.tok.col)
+            node.data_str = self.tok.value
+        else:
+            node = Node(NOD_INT if self.tok.type == TOK_INT else NOD_FLOAT, cur_scope, cur_func, self.tok.ln, self.tok.col)
+            node.data_digit = float(self.tok.value)
+
         self.eat(self.tok.type)
+        return node
+    
+    def prs_list(self) -> None:
+        ln = self.tok.ln
+        col = self.tok.col
+        self.eat(TOK_LSQUARE)
+        items = []
+
+        while self.tok.type != TOK_RSQUARE and self.tok.type != TOK_EOF:
+            if len(items) > 0:
+                self.eat(TOK_COMMA)
+
+            items.append(self.prs_value("<None>"))
+
+        self.eat(TOK_RSQUARE)
+
+        node = Node(NOD_LIST, cur_scope, cur_func, ln, col)
+        node.list_items = items
         return node
     
     def prs_stmt(self) -> Node:
         if self.tok.type == TOK_ID:
             return self.prs_id()
-        elif self.tok.type == TOK_INT or self.tok.type == TOK_FLOAT:
+        elif self.tok.type == TOK_INT or self.tok.type == TOK_FLOAT or self.tok.type == TOK_STR:
             return self.prs_data()
+        elif self.tok.type == TOK_LSQUARE:
+            return self.prs_list()
         else:
             print(f"{self.file}:{self.tok.ln}:{self.tok.col}: Error: Invalid statement '{tok_type_to_str(self.tok.type)}'.")
             exit()
@@ -262,7 +330,7 @@ class Prs:
 
         while self.tok.type != TOK_EOF:
             node = self.prs_stmt()
-            if not node.type in [NOD_FUNC, NOD_CALL, NOD_ASSIGN, NOD_NOP]:
+            if not node.type in [NOD_FUNC, NOD_CALL, NOD_ASSIGN, NOD_NOP, NOD_C, NOD_SUBSCR]:
                 print(f"{self.file}:{node.ln}:{node.col}: Error: Invalid statement '{node_type_to_str(node.type)}'.")
                 exit()
 

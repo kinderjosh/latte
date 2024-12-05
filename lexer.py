@@ -12,6 +12,9 @@ TOK_COLON = 9
 TOK_COMMA = 10
 TOK_EQUAL = 11
 TOK_SEMI = 12
+TOK_STR = 13
+TOK_LSQUARE = 14
+TOK_RSQUARE = 15
 
 def tok_type_to_str(type: int) -> str:
     if type == TOK_EOF:
@@ -38,6 +41,12 @@ def tok_type_to_str(type: int) -> str:
         return "Equal"
     elif type == TOK_SEMI:
         return "Semicolon"
+    elif type == TOK_STR:
+        return "String"
+    elif type == TOK_LSQUARE:
+        return "Left square"
+    elif type == TOK_RSQUARE:
+        return "Right square"
     else:
         return "<Undefined>"
 
@@ -123,6 +132,55 @@ class Lex:
             if is_float:
                 return Tok(TOK_FLOAT, value, self.ln, self.col - len(value))
             return Tok(TOK_INT, value, self.ln, self.col - len(value))
+        elif self.ch == '\"':
+            self.step()
+            value = ""
+
+            while (self.ch != '\"' or self.peek(-1) == '\\') and self.ch != '\n' and self.ch != '\0':
+                if self.ch == '\\' and self.peek(1) == '"':
+                    self.step()
+
+                value += self.ch
+                self.step()
+
+            if self.ch != '\"':
+                print(f"{self.file}:{self.ln}:{self.col - len(value) - 1}: Error: Unclosed string literal.")
+                exit()
+
+            self.step()
+            return Tok(TOK_STR, value, self.ln, self.col - len(value) - 2)
+        elif self.ch == '\'':
+            col = self.col
+            self.step()
+            value = ""
+
+            if self.ch == '\\':
+                self.step()
+
+                if self.ch == 'n':
+                    value = "10"
+                elif self.ch == 't':
+                    value = "9"
+                elif self.ch == "r":
+                    value = "13"
+                elif self.ch == "0":
+                    value = "0"
+                elif self.ch in ['\\', '\'', '\"']:
+                    value = chr(self.ch[0])
+                else:
+                    print(f"{self.file}:{self.ln}:{col}: Error: Unsupported escape sequence '\\{self.ch}'.")
+                    exit()
+            else:
+                value = chr(self.ch[0])
+
+            self.step()
+
+            if self.ch != '\'':
+                print(f"{self.file}:{self.ln}:{col}: Error: Unclosed character constant.")
+                exit()
+
+            self.step()
+            return Tok(TOK_INT, value, self.ln, col)
         
         if self.ch == '\0':
             return Tok(TOK_EOF, "<EOF>", self.ln, self.col)
@@ -138,10 +196,14 @@ class Lex:
             return self.step_with(TOK_COLON, ":")
         elif self.ch == ',':
             return self.step_with(TOK_COMMA, ",")
-        elif self.ch == "=":
+        elif self.ch == '=':
             return self.step_with(TOK_EQUAL, "=")
-        elif self.ch == ";":
+        elif self.ch == ';':
             return self.step_with(TOK_SEMI, ";")
+        elif self.ch == '[':
+            return self.step_with(TOK_LSQUARE, "[")
+        elif self.ch == ']':
+            return self.step_with(TOK_RSQUARE, "]")
         else:
             print(f"{self.file}:{self.ln}:{self.col}: Error: Unknown character '{self.ch}'.")
             exit()

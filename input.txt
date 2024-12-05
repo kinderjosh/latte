@@ -1,9 +1,3 @@
-Int Get();
-
-// ...
-
-Int Get() {
-    return 32;
-}
-
-Float a = Get();
+Int[] data = [1, 2, 3];
+data[1] = 23;
+data = [];
