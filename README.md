@@ -3,7 +3,7 @@
 > [!IMPORTANT]
 > Patchwork is still work-in-progress and not production ready. Use at your own risk.
 
-Patchwork is a transpiler written from scratch that generates C code compatible for Windows, Mac and Linux.
+Patchwork is a compiler written from scratch that generates C code compatible for Windows, Mac and Linux.
 
 Some key features of the language as of now is that it isn't object oriented, it does (hopefully) have garbage collection, and it allows for dynamic lists out of the box.
 
