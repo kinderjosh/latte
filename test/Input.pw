@@ -1,0 +1,3 @@
+import Core;
+
+PutString("Hello world!\n");
