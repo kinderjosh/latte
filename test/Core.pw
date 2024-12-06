@@ -1,0 +1,24 @@
+// Core library for the Patchwork programming language.
+// Copyright (c) 2024 kinderjosh <https://github.com/kinderjosh>
+
+// Printing
+
+Void PutString(String s)
+{
+    __C__("fputs(s_, stdout);");
+}
+
+Void PutChar(Char c)
+{
+    __C__("fputc(c_, stdout);");
+}
+
+Void PutInt(Int i)
+{
+    __C__("printf(\"%d\", i_);");
+}
+
+Void PutFloat(Float f)
+{
+    __C__("printf(\"%f\", f_);");
+}
