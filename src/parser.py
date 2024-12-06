@@ -228,6 +228,24 @@ class Prs:
             node = Node(NOD_C, cur_scope, cur_func, ln, col)
             node.c_code = code
             return node
+        elif id == "import":
+            name = self.tok.value
+            self.eat(TOK_ID)
+
+            if ".pw" in name:
+                print(f"{self.file}:{ln}:{col}: Error: Redundant file extension in import name {name}.")
+                exit()
+
+            if not os.path.exists(name + ".pw"):
+                if "\\" in self.file:
+                    path = self.file.rpartition('\\')[0] + "\\" + name
+                    if not os.path.exists(path + ".pw"):
+                        print(f"{self.file}:{ln}:{col}: Error: No such file '{name}.pw' to import.")
+                        exit()
+
+            node = Node(NOD_IMPORT, cur_scope, cur_func, ln, col)
+            node.import_nodes = Prs(path + ".pw").prs().root_nodes
+            return node
         elif self.tok.type == TOK_LSQUARE:
             sym = sym_find(NOD_ASSIGN, cur_scope, id)
             if sym is None:
@@ -289,7 +307,6 @@ class Prs:
             node.call_name = id
             node.call_args = args
             return node
-
         elif sym_find(NOD_ASSIGN, cur_scope, id) is not None:
             node = Node(NOD_VAR, cur_scope, cur_func, ln, col)
             node.var_name = id
@@ -347,12 +364,17 @@ class Prs:
 
         while self.tok.type != TOK_EOF:
             node = self.prs_stmt()
-            if not node.type in [NOD_FUNC, NOD_CALL, NOD_ASSIGN, NOD_NOP, NOD_C, NOD_SUBSCR]:
+            if not node.type in [NOD_FUNC, NOD_CALL, NOD_ASSIGN, NOD_NOP, NOD_C, NOD_SUBSCR, NOD_IMPORT]:
                 print(f"{self.file}:{node.ln}:{node.col}: Error: Invalid statement '{node_type_to_str(node.type)}'.")
                 exit()
 
             if node.type != NOD_FUNC:
                 self.eat(TOK_SEMI)
+
+            if node.type == NOD_IMPORT:
+                for i in node.import_nodes:
+                    nodes.append(i)
+                continue
 
             nodes.append(node)
 

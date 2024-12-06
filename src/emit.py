@@ -21,7 +21,7 @@ def free_double_lists() -> str:
     code = ""
 
     for lst in double_lists_to_free:
-        code += f"for (size_t i = 0; i < {lst.list_size}; i++)\nfree({lst.assign_name}_[i]);\n"
+        code += f"for (size_t i = 0; i < {lst.list_size}; i++) " + "{" + f"\nfree({lst.assign_name}_[i]);{lst.assign_name}_[i] = NULL;\n" + "}\n"
 
     double_lists_to_free = []
     return code
@@ -46,14 +46,19 @@ def node_to_value(node: Node) -> str:
 
 def gen_func(node: Node) -> str:
     code = types[node.func_type] + " " + node.func_name + "_("
+    add_to_gc = ""
+
     if len(node.func_params) > 0:
         for i, param in enumerate(node.func_params):
             code += types[param.assign_type] + " " + param.assign_name + "_"
 
+            if param.assign_type == "String" or "[]" in param.assign_type:
+                add_to_gc += f"gc_add({param.assign_name}_, sizeof({types[param.assign_type]}));\n"
+
             if i != len(node.func_params) - 1:
                 code += ", "
 
-    code += ") {\n"
+    code += ") {\n" + add_to_gc
 
     for stmt in node.func_body:
         code += gen_node(stmt)
@@ -95,7 +100,7 @@ def gen_assign(node: Node) -> str:
 
         if node.assign_type is None:
             if types[sym.assign_type].count("*") > 1 and node.list_size > 0:
-                before_code = f"for (size_t i = 0; i < {node.list_size}; i++)\nfree({node.assign_name}_[i]);\n"
+                before_code = f"for (size_t i = 0; i < {node.list_size}; i++) " + "{" + f"\nfree({node.assign_name}_[i]);{node.assign_name}_[i] = NULL;\n" + "}\n"
 
         items = []
         size = 0
@@ -151,7 +156,7 @@ def gen_root(root: Node) -> str:
     global global_decls
     main = "\nint main(int argc, char** argv) {\ngc_init();\n"
     headers = "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <stdint.h>\n\n"
-    other = "void** gc;\nsize_t gc_cnt = 0, gc_size = 0;\n\nvoid gc_init() {\ngc = malloc(1);\n}\n\nvoid gc_add(void* ptr, size_t size) {\ngc_size += size;\ngc = realloc(gc, gc_size);\ngc[gc_cnt++] = ptr;\n}\n\nvoid gc_free() {\nfor (size_t i = 0; i < gc_cnt; i++)\nfree(gc[i]);\nfree(gc);\n}\n\nchar* newstr(char* str) {\nchar* new = calloc(strlen(str) + 1, sizeof(char));\nstrcpy(new, str);\nreturn new;\n}\n\n"
+    other = "void** gc;\nsize_t gc_cnt = 0, gc_size = 0;\n\nvoid gc_init() {\ngc = malloc(1);\n}\n\nvoid gc_add(void* ptr, size_t size) {\ngc_size += size;\ngc = realloc(gc, gc_size);\ngc[gc_cnt++] = ptr;\n}\n\nvoid gc_free() {\nfor (size_t i = 0; i < gc_cnt; i++) {\nif (gc[i] != NULL)\nfree(gc[i]);\ngc[i] = NULL;\n}\nfree(gc);\n}\n\nchar* newstr(char* str) {\nchar* new = calloc(strlen(str) + 1, sizeof(char));\nstrcpy(new, str);\nreturn new;\n}\n\n"
 
     for node in root.root_nodes:
         stmt = gen_node(node)

@@ -13,6 +13,7 @@ NOD_STR = 9
 NOD_C = 10
 NOD_LIST = 11
 NOD_SUBSCR = 12
+NOD_IMPORT = 13
 
 def node_type_to_str(type: int) -> str:
     if type == NOD_ROOT:
@@ -41,6 +42,8 @@ def node_type_to_str(type: int) -> str:
         return "List"
     elif type == NOD_SUBSCR:
         return "Array subscript"
+    elif type == NOD_IMPORT:
+        return "Import"
     else:
         return "<Undefined>"
 
