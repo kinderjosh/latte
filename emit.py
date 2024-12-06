@@ -170,5 +170,5 @@ def gen_node(node: Node) -> str:
     elif node.type == NOD_SUBSCR:
         return gen_subscr(node)
     else:
-        print(f"latte: Error: No backend for '{node_type_to_str(node.type)}'.")
+        print(f"pwc: Error: No backend for '{node_type_to_str(node.type)}'.")
         exit()

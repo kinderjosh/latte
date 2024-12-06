@@ -6,7 +6,7 @@ import os
 
 if __name__ == "__main__":
     #if len(sys.argv) < 2:
-    #    print("latte: Error: Missing argument <input file>.")
+    #    print("pwc: Error: Missing argument <input file>.")
     #    exit()
 
     #prs = Prs(sys.argv[1])
