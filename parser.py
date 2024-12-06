@@ -93,8 +93,19 @@ class Prs:
         id = self.tok.value
         self.eat(TOK_ID)
 
-        if is_type(id):
+        is_global = False
+        if id == "Global":
+            is_global = True
+
+        if is_type(id) or id == "Global":
+            if id == "Global":
+                id = self.prs_type()
+
             if self.tok.type == TOK_LSQUARE:
+                if type == "Void":
+                    print(f"{self.file}:{ln}:{col}: Error: Illegal list type 'Void'.")
+                    exit()
+
                 self.eat(TOK_LSQUARE)
                 self.eat(TOK_RSQUARE)
                 id += "[]"
@@ -118,6 +129,7 @@ class Prs:
                 node.func_name = name
                 node.func_type = type
                 node.func_body = None
+                node.is_global = is_global
                 
                 params = []
                 self.eat(TOK_LPAREN)
@@ -169,9 +181,14 @@ class Prs:
                 cur_func = "<global>"
                 return node
             
+            if type == "Void":
+                print(f"{self.file}:{ln}:{col}: Error: Illegal variable type 'Void'.")
+                exit()
+            
             node = Node(NOD_ASSIGN, cur_scope, cur_func, ln, col)
             node.assign_name = name
             node.assign_type = type
+            node.is_global = is_global
 
             if self.tok.type == TOK_EQUAL:
                 self.eat(TOK_EQUAL)

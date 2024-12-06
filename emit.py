@@ -14,6 +14,7 @@ types = {
 }
 
 double_lists_to_free = []
+global_decls = ""
 
 def free_double_lists() -> str:
     global double_lists_to_free
@@ -72,12 +73,19 @@ def gen_call(node: Node) -> str:
 
 def gen_assign(node: Node) -> str:
     global double_lists_to_free
+    global global_decls
     code = ""
 
     if node.assign_type is not None:
         code = types[node.assign_type] + " "
 
-    code += node.assign_name + "_ = "
+    code += node.assign_name + "_"
+
+    if node.is_global and node.assign_type is not None:
+        global_decls += code + ";\n"
+        code = node.assign_name + "_"
+
+    code += " = "
     
     sym = sym_find(NOD_ASSIGN, node.scope_def, node.assign_name)
     
@@ -85,8 +93,9 @@ def gen_assign(node: Node) -> str:
     if "[]" in sym.assign_type:
         before_code = None
 
-        if node.assign_type is None and types[sym.assign_type].count("*") > 1 and node.list_size > 0:
-            before_code = f"for (size_t i = 0; i < {node.list_size}; i++)\nfree({node.assign_name}_[i]);\n"
+        if node.assign_type is None:
+            if types[sym.assign_type].count("*") > 1 and node.list_size > 0:
+                before_code = f"for (size_t i = 0; i < {node.list_size}; i++)\nfree({node.assign_name}_[i]);\n"
 
         items = []
         size = 0
@@ -122,7 +131,12 @@ def gen_assign(node: Node) -> str:
     elif node.assign_value is None:
         return code + ";\n"
     
-    return code + node_to_value(node.assign_value) + ";\n"
+    code += node_to_value(node.assign_value) + ";\n"
+
+    if sym.assign_type == "String" and node.assign_type is not None:
+        return code + f"gc_add({node.assign_name}_, sizeof(char*));\n"
+    
+    return code
 
 def gen_ret(node: Node) -> str:
     code = "return"
@@ -134,8 +148,10 @@ def gen_ret(node: Node) -> str:
 
 def gen_root(root: Node) -> str:
     global double_lists_to_free
+    global global_decls
     main = "\nint main(int argc, char** argv) {\ngc_init();\n"
-    other = "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <stdint.h>\n\nvoid** gc;\nsize_t gc_cnt = 0, gc_size = 0;\n\nvoid gc_init() {\ngc = malloc(1);\n}\n\nvoid gc_add(void* ptr, size_t size) {\ngc_size += size;\ngc = realloc(gc, gc_size);\ngc[gc_cnt++] = ptr;\n}\n\nvoid gc_free() {\nfor (size_t i = 0; i < gc_cnt; i++)\nfree(gc[i]);\nfree(gc);\n}\n\nchar* newstr(char *str) {\nchar *new = calloc(strlen(str) + 1, sizeof(char));\nstrcpy(new, str);\nreturn new;\n}\n\n"
+    headers = "#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <stdint.h>\n\n"
+    other = "void** gc;\nsize_t gc_cnt = 0, gc_size = 0;\n\nvoid gc_init() {\ngc = malloc(1);\n}\n\nvoid gc_add(void* ptr, size_t size) {\ngc_size += size;\ngc = realloc(gc, gc_size);\ngc[gc_cnt++] = ptr;\n}\n\nvoid gc_free() {\nfor (size_t i = 0; i < gc_cnt; i++)\nfree(gc[i]);\nfree(gc);\n}\n\nchar* newstr(char* str) {\nchar* new = calloc(strlen(str) + 1, sizeof(char));\nstrcpy(new, str);\nreturn new;\n}\n\n"
 
     for node in root.root_nodes:
         stmt = gen_node(node)
@@ -147,7 +163,7 @@ def gen_root(root: Node) -> str:
             other += stmt
             double_lists_to_free = double_lists_cache
 
-    return other + main + free_double_lists() + "gc_free();\nreturn 0;\n}"
+    return headers + global_decls + other + main + free_double_lists() + "gc_free();\nreturn 0;\n}"
 
 def gen_subscr(node: Node) -> str:
     return f"{node.subscr_name}_[{node_to_value(node.subscr_index)}] = {node_to_value(node.subscr_assign)};\n"
